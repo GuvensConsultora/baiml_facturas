@@ -4,19 +4,17 @@
               inherit_id="l10n_ar.report_invoice_document"
               name="BAIML — Ocultar columna Impuestos en PDF">
 
-        <!-- Header: l10n_ar usa t-if="not _l10n_ar_include_vat()" → eliminar -->
+        <!-- Header tax column: l10n_ar usa t-if="not _l10n_ar_include_vat()" -->
         <xpath expr="//th[@name='th_taxes']" position="replace"/>
 
-        <!-- Celda de impuestos en líneas individuales:
-             l10n_ar cambió el t-if a "not hide_prices and not _l10n_ar_include_vat()"
-             → forzar False para que nunca renderice -->
-        <xpath expr="//span[@id='line_tax_ids']/.." position="attributes">
-            <attribute name="t-if">False</attribute>
+        <!-- Celda de impuestos en líneas individuales: reemplazar por nodo vacío -->
+        <xpath expr="//td[@name='td_taxes']" position="replace">
+            <td name="td_taxes" t-if="False"/>
         </xpath>
 
-        <!-- Celda de impuestos en líneas agrupadas: mismo patrón -->
-        <xpath expr="//span[@id='grouped_line_tax_ids']/.." position="attributes">
-            <attribute name="t-if">False</attribute>
+        <!-- Celda de impuestos en líneas agrupadas: reemplazar por nodo vacío -->
+        <xpath expr="//td[@name='td_taxes_grouped']" position="replace">
+            <td name="td_taxes_grouped" t-if="False"/>
         </xpath>
 
     </template>
