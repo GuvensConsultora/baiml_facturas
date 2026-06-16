@@ -2,17 +2,23 @@
 <odoo>
     <template id="report_invoice_document_no_tax_col"
               inherit_id="l10n_ar.report_invoice_document"
-              name="BAIML — Ocultar columna Impuestos en PDF">
+              name="BAIML — Ajustes PDF facturas">
 
-        <!-- Header tax column: l10n_ar usa t-if="not _l10n_ar_include_vat()" -->
+        <!-- Encabezado: mostrar logo/razón social/CUIT en borradores y en facturas
+             electrónicas con CAE aunque el journal sea II_IM (pre-impreso).
+             Solo se oculta cuando la factura está posted SIN auth_code_due en II_IM
+             (único caso donde el papel realmente viene pre-impreso). -->
+        <xpath expr="//t[@t-set='pre_printed_report']" position="attributes">
+            <attribute name="t-value">report_type == 'pdf' and o.journal_id.l10n_ar_afip_pos_system == 'II_IM' and o.state == 'posted' and not o.l10n_ar_afip_auth_code_due</attribute>
+        </xpath>
+
+        <!-- Columna impuestos: ocultar header th y celdas de datos -->
         <xpath expr="//th[@name='th_taxes']" position="replace"/>
 
-        <!-- Celda de impuestos en líneas individuales: reemplazar por nodo vacío -->
         <xpath expr="//td[@name='td_taxes']" position="replace">
             <td name="td_taxes" t-if="False"/>
         </xpath>
 
-        <!-- Celda de impuestos en líneas agrupadas: reemplazar por nodo vacío -->
         <xpath expr="//td[@name='td_taxes_grouped']" position="replace">
             <td name="td_taxes_grouped" t-if="False"/>
         </xpath>
