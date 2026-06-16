@@ -4,13 +4,11 @@
               inherit_id="l10n_ar.report_invoice_document"
               name="BAIML — Ocultar columna Impuestos en PDF">
 
-        <!-- Forzar display_taxes=False: oculta td_taxes, td_taxes_grouped y corrige colspans -->
-        <xpath expr="//t[@t-set='display_taxes']" position="replace">
-            <t t-set="display_taxes" t-value="False"/>
-        </xpath>
-
-        <!-- Reemplazar th_taxes con nada: l10n_ar ya lo reemplazó con condición propia -->
+        <!-- l10n_ar reemplazó th/td/td_grouped con t-if="not _l10n_ar_include_vat()".
+             Heredamos de l10n_ar para correr después y eliminar los tres nodos. -->
         <xpath expr="//th[@name='th_taxes']" position="replace"/>
+        <xpath expr="//td[@name='td_taxes']" position="replace"/>
+        <xpath expr="//td[@name='td_taxes_grouped']" position="replace"/>
 
     </template>
 </odoo>
