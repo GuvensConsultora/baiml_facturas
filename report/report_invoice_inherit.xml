@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_invoice_document_no_tax_col"
+              inherit_id="account.report_invoice_document"
+              name="BAIML — Ocultar columna Impuestos en PDF">
+
+        <!-- Forzar display_taxes=False: oculta td_taxes, td_taxes_grouped y corrige colspans -->
+        <xpath expr="//t[@t-set='display_taxes']" position="replace">
+            <t t-set="display_taxes" t-value="False"/>
+        </xpath>
+
+        <!-- Reemplazar th_taxes con nada: l10n_ar ya lo reemplazó con condición propia -->
+        <xpath expr="//th[@name='th_taxes']" position="replace"/>
+
+    </template>
+</odoo>
