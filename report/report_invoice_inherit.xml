@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <template id="report_invoice_document_no_tax_col"
-              inherit_id="account.report_invoice_document"
+              inherit_id="l10n_ar.report_invoice_document"
               name="BAIML — Ocultar columna Impuestos en PDF">
 
         <!-- Forzar display_taxes=False: oculta td_taxes, td_taxes_grouped y corrige colspans -->
