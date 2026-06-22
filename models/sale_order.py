@@ -42,6 +42,11 @@ class SaleOrder(models.Model):
         )
 
     def _sync_bonif_desc_so_lines(self):
+        # Guard contra recursión: si ya estamos sincroniando, salir
+        if self.env.context.get('_syncing_bonif'):
+            return
+        self = self.with_context(_syncing_bonif=True)
+
         for order in self:
             # Desc % → campo discount en cada línea de producto
             for line in order.order_line:
@@ -61,10 +66,8 @@ class SaleOrder(models.Model):
                 if order.bonif_percent == 0:
                     existing.unlink()
                 else:
-                    existing[0].update({
-                        'name': f'Bonificación {order.bonif_percent:.4g}%',
-                        'price_unit': -bonif_amount,
-                    })
+                    existing[0].name = f'Bonificación {order.bonif_percent:.4g}%'
+                    existing[0].price_unit = -bonif_amount
             elif order.bonif_percent > 0:
                 product = order._get_bonif_product()
                 if not product:
@@ -80,10 +83,28 @@ class SaleOrder(models.Model):
                     'tax_ids': tax_cmd,
                 })]
 
+    def action_update_prices(self):
+        res = super().action_update_prices()
+        # Safety net: refrescar y sincronizar si hay ajustes cargados
+        self.invalidate_recordset(['order_line'])
+        self.filtered(lambda o: o.bonif_percent or o.discount_percent)._sync_bonif_desc_so_lines()
+        return res
+
     @api.onchange('bonif_percent', 'discount_percent')
     def _onchange_bonif_discount_so(self):
         self._sync_bonif_desc_so_lines()
 
-    def action_recalculate_bonif(self):
-        """Botón: recalcular bonif/desc sobre los precios actuales del presupuesto."""
-        self._sync_bonif_desc_so_lines()
+
+class SaleOrderLine(models.Model):
+    _inherit = 'sale.order.line'
+
+    def write(self, vals):
+        res = super().write(vals)
+        # Recalcular bonif/desc automáticamente cuando cambia precio o cantidad
+        if not self.env.context.get('_syncing_bonif') and \
+                ('price_unit' in vals or 'product_uom_qty' in vals):
+            non_bonif = self.filtered(lambda l: l.product_id.default_code != BONIF_CODE)
+            orders = non_bonif.order_id.filtered(lambda o: o.bonif_percent or o.discount_percent)
+            if orders:
+                orders._sync_bonif_desc_so_lines()
+        return res
