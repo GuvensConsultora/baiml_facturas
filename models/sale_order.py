@@ -74,7 +74,7 @@ class SaleOrder(models.Model):
                 'product_uom_qty': 1,
                 'price_unit': -bonif_amount,
                 'discount': 0,
-                'tax_id': tax_cmd,
+                'tax_ids': tax_cmd,
             }
             if existing:
                 existing.write(vals)
