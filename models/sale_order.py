@@ -20,11 +20,6 @@ class SaleOrder(models.Model):
         moves._sync_bonif_desc_lines()
         return moves
 
-    def action_update_prices(self):
-        res = super().action_update_prices()
-        self._sync_bonif_desc_so_lines()
-        return res
-
     def _get_bonif_product(self):
         return self.env['product.product'].search(
             [('default_code', '=', BONIF_CODE)], limit=1
@@ -66,7 +61,6 @@ class SaleOrder(models.Model):
                 if order.bonif_percent == 0:
                     existing.unlink()
                 else:
-                    # update() opera solo en memoria: seguro en contexto onchange
                     existing[0].update({
                         'name': f'Bonificación {order.bonif_percent:.4g}%',
                         'price_unit': -bonif_amount,
@@ -90,11 +84,6 @@ class SaleOrder(models.Model):
     def _onchange_bonif_discount_so(self):
         self._sync_bonif_desc_so_lines()
 
-
-class SaleOrderLine(models.Model):
-    _inherit = 'sale.order.line'
-
-    def _compute_price_unit(self):
-        # La línea de bonificación maneja su propio precio: excluirla del recálculo
-        bonif = self.filtered(lambda l: l.product_id.default_code == BONIF_CODE)
-        super(SaleOrderLine, self - bonif)._compute_price_unit()
+    def action_recalculate_bonif(self):
+        """Botón: recalcular bonif/desc sobre los precios actuales del presupuesto."""
+        self._sync_bonif_desc_so_lines()
