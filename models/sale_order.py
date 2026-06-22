@@ -85,10 +85,5 @@ class SaleOrder(models.Model):
     def _onchange_bonif_discount_so(self):
         self._sync_bonif_desc_so_lines()
 
-    def action_update_prices(self):
-        """Hook post actualización de lista de precios: recalcular bonif/desc."""
-        res = super().action_update_prices()
-        orders = self.filtered(lambda o: o.bonif_percent or o.discount_percent)
-        if orders:
-            orders._sync_bonif_desc_so_lines()
-        return res
+    def action_recalcular_ajustes(self):
+        self._sync_bonif_desc_so_lines()
