@@ -20,6 +20,15 @@ class AccountMove(models.Model):
             [('default_code', '=', default_code)], limit=1
         )
 
+    def _get_iva21_tax(self):
+        return self.env['account.tax'].search([
+            ('type_tax_use', '=', 'sale'),
+            ('amount', '=', 21.0),
+            ('amount_type', '=', 'percent'),
+            ('company_id', '=', self.company_id.id),
+            ('active', '=', True),
+        ], limit=1)
+
     def _base_amount(self):
         special = {BONIF_CODE, DESC_CODE}
         return sum(
@@ -33,6 +42,9 @@ class AccountMove(models.Model):
         for move in self:
             if move.move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'):
                 continue
+
+            iva21 = move._get_iva21_tax()
+            tax_cmd = [(6, 0, iva21.ids)] if iva21 else [(5, 0, 0)]
 
             base = move._base_amount()
             bonif_amount = round(base * move.bonif_percent / 100, 2)
@@ -59,7 +71,7 @@ class AccountMove(models.Model):
                     'product_id': product.id,
                     'quantity': 1,
                     'price_unit': -amount,
-                    'tax_ids': [(5, 0, 0)],
+                    'tax_ids': tax_cmd,
                 }
                 if existing:
                     existing.write(vals)
