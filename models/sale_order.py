@@ -42,13 +42,11 @@ class SaleOrder(models.Model):
         )
 
     def _sync_bonif_desc_so_lines(self):
-        # Guard contra recursión: si ya estamos sincroniando, salir
         if self.env.context.get('_syncing_bonif'):
             return
         self = self.with_context(_syncing_bonif=True)
 
         for order in self:
-            # Desc % → campo discount en cada línea de producto
             for line in order.order_line:
                 if line.product_id.default_code == BONIF_CODE:
                     continue
@@ -83,28 +81,13 @@ class SaleOrder(models.Model):
                     'tax_ids': tax_cmd,
                 })]
 
-    def action_update_prices(self):
-        res = super().action_update_prices()
-        # Safety net: refrescar y sincronizar si hay ajustes cargados
-        self.invalidate_recordset(['order_line'])
-        self.filtered(lambda o: o.bonif_percent or o.discount_percent)._sync_bonif_desc_so_lines()
-        return res
-
-    @api.onchange('bonif_percent', 'discount_percent')
+    # Dispara cuando cambian los % O la lista de precios
+    @api.onchange('bonif_percent', 'discount_percent', 'pricelist_id')
     def _onchange_bonif_discount_so(self):
         self._sync_bonif_desc_so_lines()
 
-
-class SaleOrderLine(models.Model):
-    _inherit = 'sale.order.line'
-
-    def write(self, vals):
-        res = super().write(vals)
-        # Recalcular bonif/desc automáticamente cuando cambia precio o cantidad
-        if not self.env.context.get('_syncing_bonif') and \
-                ('price_unit' in vals or 'product_uom_qty' in vals):
-            non_bonif = self.filtered(lambda l: l.product_id.default_code != BONIF_CODE)
-            orders = non_bonif.order_id.filtered(lambda o: o.bonif_percent or o.discount_percent)
-            if orders:
-                orders._sync_bonif_desc_so_lines()
-        return res
+    # Dispara cuando cambia precio o cantidad en cualquier línea
+    @api.onchange('order_line.price_unit', 'order_line.product_uom_qty')
+    def _onchange_line_amounts_bonif(self):
+        if self.bonif_percent or self.discount_percent:
+            self._sync_bonif_desc_so_lines()
