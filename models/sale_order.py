@@ -81,13 +81,14 @@ class SaleOrder(models.Model):
                     'tax_ids': tax_cmd,
                 })]
 
-    # Dispara cuando cambian los % O la lista de precios
-    @api.onchange('bonif_percent', 'discount_percent', 'pricelist_id')
+    @api.onchange('bonif_percent', 'discount_percent')
     def _onchange_bonif_discount_so(self):
         self._sync_bonif_desc_so_lines()
 
-    # Dispara cuando cambia precio o cantidad en cualquier línea
-    @api.onchange('order_line.price_unit', 'order_line.product_uom_qty')
-    def _onchange_line_amounts_bonif(self):
-        if self.bonif_percent or self.discount_percent:
-            self._sync_bonif_desc_so_lines()
+    def action_update_prices(self):
+        """Hook post actualización de lista de precios: recalcular bonif/desc."""
+        res = super().action_update_prices()
+        orders = self.filtered(lambda o: o.bonif_percent or o.discount_percent)
+        if orders:
+            orders._sync_bonif_desc_so_lines()
+        return res
