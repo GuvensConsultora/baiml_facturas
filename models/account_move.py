@@ -16,7 +16,6 @@ class AccountMove(models.Model):
         )
 
     def _base_amount(self):
-        """Subtotal de líneas regulares (excluye las especiales de bonif/desc)."""
         special = {BONIF_CODE, DESC_CODE}
         return sum(
             l.price_subtotal
@@ -26,13 +25,11 @@ class AccountMove(models.Model):
         )
 
     def _sync_bonif_desc_lines(self):
-        """Inserta, actualiza o elimina las líneas especiales de bonif y desc."""
         for move in self:
             if move.move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'):
                 continue
 
             base = move._base_amount()
-
             bonif_amount = round(base * move.bonif_percent / 100, 2)
             after_bonif = base - bonif_amount
             desc_amount = round(after_bonif * move.discount_percent / 100, 2)
@@ -42,7 +39,7 @@ class AccountMove(models.Model):
                 (DESC_CODE, move.discount_percent, desc_amount, 'Descuento comercial'),
             ]:
                 existing = move.invoice_line_ids.filtered(
-                    lambda l: l.product_id.default_code == code
+                    lambda l, c=code: l.product_id.default_code == c
                 )
                 if pct == 0:
                     existing.unlink()
@@ -53,7 +50,7 @@ class AccountMove(models.Model):
                     continue
 
                 vals = {
-                    'name': f'{label} {pct:.2g}%',
+                    'name': f'{label} {pct:.4g}%',
                     'product_id': product.id,
                     'quantity': 1,
                     'price_unit': -amount,
@@ -62,8 +59,7 @@ class AccountMove(models.Model):
                 if existing:
                     existing.write(vals)
                 else:
-                    vals['move_id'] = move.id
-                    self.env['account.move.line'].create(vals)
+                    move.invoice_line_ids = [(0, 0, vals)]
 
     @api.onchange('bonif_percent', 'discount_percent')
     def _onchange_bonif_discount(self):
