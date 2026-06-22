@@ -9,6 +9,11 @@ class AccountMove(models.Model):
 
     bonif_percent = fields.Float(string='Bonificación %', digits=(5, 2), default=0.0)
     discount_percent = fields.Float(string='Descuento %', digits=(5, 2), default=0.0)
+    pricelist_id = fields.Many2one(
+        'product.pricelist',
+        string='Lista de precios',
+        domain="[('currency_id', '=', currency_id)]",
+    )
 
     def _get_special_product(self, default_code):
         return self.env['product.product'].search(
@@ -64,3 +69,22 @@ class AccountMove(models.Model):
     @api.onchange('bonif_percent', 'discount_percent')
     def _onchange_bonif_discount(self):
         self._sync_bonif_desc_lines()
+
+    def action_apply_pricelist(self):
+        special = {BONIF_CODE, DESC_CODE}
+        for move in self:
+            if not move.pricelist_id or move.state != 'draft':
+                continue
+            for line in move.invoice_line_ids.filtered(
+                lambda l: l.display_type == 'product'
+                    and l.product_id
+                    and l.product_id.default_code not in special
+            ):
+                price = move.pricelist_id._get_product_price(
+                    line.product_id,
+                    line.quantity or 1.0,
+                    currency=move.currency_id,
+                    date=move.invoice_date or fields.Date.today(),
+                )
+                line.price_unit = price
+            move._sync_bonif_desc_lines()
