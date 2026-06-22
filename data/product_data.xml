@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="product_bonif_baiml" model="product.template">
+        <field name="name">Bonificación</field>
+        <field name="default_code">BONIF_BAIML</field>
+        <field name="type">service</field>
+        <field name="sale_ok">False</field>
+        <field name="purchase_ok">False</field>
+        <field name="list_price">0.0</field>
+        <field name="taxes_id" eval="[(5, 0, 0)]"/>
+    </record>
+
+    <record id="product_desc_baiml" model="product.template">
+        <field name="name">Descuento comercial</field>
+        <field name="default_code">DESC_BAIML</field>
+        <field name="type">service</field>
+        <field name="sale_ok">False</field>
+        <field name="purchase_ok">False</field>
+        <field name="list_price">0.0</field>
+        <field name="taxes_id" eval="[(5, 0, 0)]"/>
+    </record>
+
+</odoo>

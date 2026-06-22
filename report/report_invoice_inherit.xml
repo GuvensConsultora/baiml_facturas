@@ -23,5 +23,45 @@
             <td name="td_taxes_grouped" t-if="False"/>
         </xpath>
 
+        <!-- Líneas del cuerpo: excluir las líneas especiales de bonif/desc -->
+        <xpath expr="//tr[hasclass('o_data_row') or @t-foreach='lines']" position="attributes">
+            <attribute name="t-if">line.product_id.default_code not in ('BONIF_BAIML', 'DESC_BAIML')</attribute>
+        </xpath>
+
+        <!-- Sección bonif/desc: se muestra entre las líneas y los totales de impuestos -->
+        <xpath expr="//t[@t-set='tax_totals']" position="before">
+            <t t-if="o.bonif_percent or o.discount_percent">
+                <tr>
+                    <td colspan="4" style="border-top: 1px solid #dee2e6; padding-top: 4px;"/>
+                </tr>
+                <t t-set="base_amount" t-value="sum(l.price_subtotal for l in o.invoice_line_ids if l.product_id.default_code not in ('BONIF_BAIML','DESC_BAIML') and l.display_type == 'product')"/>
+                <t t-set="bonif_amount" t-value="round(base_amount * o.bonif_percent / 100, 2)"/>
+                <t t-set="after_bonif" t-value="base_amount - bonif_amount"/>
+                <t t-set="desc_amount" t-value="round(after_bonif * o.discount_percent / 100, 2)"/>
+                <tr t-if="o.bonif_percent">
+                    <td colspan="3" class="text-end"><strong>Importe bruto</strong></td>
+                    <td class="text-end">
+                        <span t-esc="base_amount" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                    </td>
+                </tr>
+                <tr t-if="o.bonif_percent">
+                    <td colspan="3" class="text-end">
+                        Bonificación <t t-esc="'%.4g' % o.bonif_percent"/>%
+                    </td>
+                    <td class="text-end">
+                        (<span t-esc="bonif_amount" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>)
+                    </td>
+                </tr>
+                <tr t-if="o.discount_percent">
+                    <td colspan="3" class="text-end">
+                        Descuento <t t-esc="'%.4g' % o.discount_percent"/>%
+                    </td>
+                    <td class="text-end">
+                        (<span t-esc="desc_amount" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>)
+                    </td>
+                </tr>
+            </t>
+        </xpath>
+
     </template>
 </odoo>
