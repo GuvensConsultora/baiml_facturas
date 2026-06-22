@@ -20,6 +20,11 @@ class SaleOrder(models.Model):
         moves._sync_bonif_desc_lines()
         return moves
 
+    def action_update_prices(self):
+        res = super().action_update_prices()
+        self._sync_bonif_desc_so_lines()
+        return res
+
     def _get_bonif_product(self):
         return self.env['product.product'].search(
             [('default_code', '=', BONIF_CODE)], limit=1
