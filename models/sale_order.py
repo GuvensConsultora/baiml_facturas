@@ -50,37 +50,46 @@ class SaleOrder(models.Model):
                 if line.discount != order.discount_percent:
                     line.discount = order.discount_percent
 
-            # Bonif % → línea negativa sobre importe bruto
             base = order._so_base_amount()
             bonif_amount = round(base * order.bonif_percent / 100, 2)
 
             existing = order.order_line.filtered(
                 lambda l: l.product_id.default_code == BONIF_CODE
             )
-            if order.bonif_percent == 0:
-                existing.unlink()
-                continue
 
-            product = order._get_bonif_product()
-            if not product:
-                continue
-
-            iva21 = order._get_iva21_tax()
-            tax_cmd = [(6, 0, iva21.ids)] if iva21 else [(5, 0, 0)]
-
-            vals = {
-                'name': f'Bonificación {order.bonif_percent:.4g}%',
-                'product_id': product.id,
-                'product_uom_qty': 1,
-                'price_unit': -bonif_amount,
-                'discount': 0,
-                'tax_ids': tax_cmd,
-            }
             if existing:
-                existing.write(vals)
-            else:
-                order.order_line = [(0, 0, vals)]
+                if order.bonif_percent == 0:
+                    existing.unlink()
+                else:
+                    # update() opera solo en memoria: seguro en contexto onchange
+                    existing[0].update({
+                        'name': f'Bonificación {order.bonif_percent:.4g}%',
+                        'price_unit': -bonif_amount,
+                    })
+            elif order.bonif_percent > 0:
+                product = order._get_bonif_product()
+                if not product:
+                    continue
+                iva21 = order._get_iva21_tax()
+                tax_cmd = [(6, 0, iva21.ids)] if iva21 else [(5, 0, 0)]
+                order.order_line = [(0, 0, {
+                    'name': f'Bonificación {order.bonif_percent:.4g}%',
+                    'product_id': product.id,
+                    'product_uom_qty': 1,
+                    'price_unit': -bonif_amount,
+                    'discount': 0,
+                    'tax_ids': tax_cmd,
+                })]
 
     @api.onchange('bonif_percent', 'discount_percent')
     def _onchange_bonif_discount_so(self):
         self._sync_bonif_desc_so_lines()
+
+
+class SaleOrderLine(models.Model):
+    _inherit = 'sale.order.line'
+
+    def _compute_price_unit(self):
+        # La línea de bonificación maneja su propio precio: excluirla del recálculo
+        bonif = self.filtered(lambda l: l.product_id.default_code == BONIF_CODE)
+        super(SaleOrderLine, self - bonif)._compute_price_unit()
