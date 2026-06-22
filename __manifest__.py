@@ -1,6 +1,6 @@
 {
     "name": "BAIML — Facturas (ajustes PDF)",
-    "version": "19.0.1.5.0",
+    "version": "19.0.1.6.0",
     "author": "Yagüven C.G.",
     "website": "https://yaguven.com",
     "category": "Accounting",

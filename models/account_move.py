@@ -1,7 +1,7 @@
 from odoo import api, fields, models
 
 BONIF_CODE = 'BONIF_BAIML'
-DESC_CODE = 'DESC_BAIML'
+DESC_CODE = 'DESC_BAIML'  # legacy — se limpia si existe
 
 
 class AccountMove(models.Model):
@@ -30,12 +30,12 @@ class AccountMove(models.Model):
         ], limit=1)
 
     def _base_amount(self):
-        special = {BONIF_CODE, DESC_CODE}
+        """Importe bruto: price_unit × quantity, sin descuento, sin línea de bonif."""
         return sum(
-            l.price_subtotal
+            l.price_unit * l.quantity
             for l in self.invoice_line_ids
-            if l.product_id.default_code not in special
-            and l.display_type == 'product'
+            if l.display_type == 'product'
+            and l.product_id.default_code != BONIF_CODE
         )
 
     def _sync_bonif_desc_lines(self):
@@ -43,40 +43,49 @@ class AccountMove(models.Model):
             if move.move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'):
                 continue
 
+            # Desc % → campo discount en cada línea de producto
+            for line in move.invoice_line_ids:
+                if line.display_type != 'product':
+                    continue
+                if line.product_id.default_code == BONIF_CODE:
+                    continue
+                if line.discount != move.discount_percent:
+                    line.discount = move.discount_percent
+
+            # Limpiar líneas DESC_BAIML legacy si existen
+            move.invoice_line_ids.filtered(
+                lambda l: l.product_id.default_code == DESC_CODE
+            ).unlink()
+
+            # Bonif % → línea negativa sobre el importe bruto
+            base = move._base_amount()
+            bonif_amount = round(base * move.bonif_percent / 100, 2)
+
+            existing_bonif = move.invoice_line_ids.filtered(
+                lambda l: l.product_id.default_code == BONIF_CODE
+            )
+            if move.bonif_percent == 0:
+                existing_bonif.unlink()
+                continue
+
+            product = move._get_special_product(BONIF_CODE)
+            if not product:
+                continue
+
             iva21 = move._get_iva21_tax()
             tax_cmd = [(6, 0, iva21.ids)] if iva21 else [(5, 0, 0)]
 
-            base = move._base_amount()
-            bonif_amount = round(base * move.bonif_percent / 100, 2)
-            after_bonif = base - bonif_amount
-            desc_amount = round(after_bonif * move.discount_percent / 100, 2)
-
-            for code, pct, amount, label in [
-                (BONIF_CODE, move.bonif_percent, bonif_amount, 'Bonificación'),
-                (DESC_CODE, move.discount_percent, desc_amount, 'Descuento comercial'),
-            ]:
-                existing = move.invoice_line_ids.filtered(
-                    lambda l, c=code: l.product_id.default_code == c
-                )
-                if pct == 0:
-                    existing.unlink()
-                    continue
-
-                product = move._get_special_product(code)
-                if not product:
-                    continue
-
-                vals = {
-                    'name': f'{label} {pct:.4g}%',
-                    'product_id': product.id,
-                    'quantity': 1,
-                    'price_unit': -amount,
-                    'tax_ids': tax_cmd,
-                }
-                if existing:
-                    existing.write(vals)
-                else:
-                    move.invoice_line_ids = [(0, 0, vals)]
+            vals = {
+                'name': f'Bonificación {move.bonif_percent:.4g}%',
+                'product_id': product.id,
+                'quantity': 1,
+                'price_unit': -bonif_amount,
+                'tax_ids': tax_cmd,
+            }
+            if existing_bonif:
+                existing_bonif.write(vals)
+            else:
+                move.invoice_line_ids = [(0, 0, vals)]
 
     @api.onchange('bonif_percent', 'discount_percent')
     def _onchange_bonif_discount(self):
