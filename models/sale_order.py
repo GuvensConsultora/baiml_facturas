@@ -81,9 +81,23 @@ class SaleOrder(models.Model):
                     'tax_ids': tax_cmd,
                 })]
 
+    # Hook nativo: excluir la línea de bonificación del recálculo de precios por
+    # lista. Sin esto, action_update_prices la pisaría a 0 (su producto tiene
+    # list_price=0) usando force_price_recomputation.
+    def _get_update_prices_lines(self):
+        lines = super()._get_update_prices_lines()
+        return lines.filtered(lambda l: l.product_id.default_code != BONIF_CODE)
+
+    # Hook nativo interno de "Actualizar precios": tras recalcular las líneas
+    # normales (y resetear su discount a 0), reaplicamos desc % y recalculamos
+    # el monto de la bonificación sobre la nueva base. Todo en la misma
+    # transacción → automático, sin botón extra.
+    def _recompute_prices(self):
+        super()._recompute_prices()
+        self.filtered(
+            lambda o: o.bonif_percent or o.discount_percent
+        )._sync_bonif_desc_so_lines()
+
     @api.onchange('bonif_percent', 'discount_percent')
     def _onchange_bonif_discount_so(self):
-        self._sync_bonif_desc_so_lines()
-
-    def action_recalcular_ajustes(self):
         self._sync_bonif_desc_so_lines()
