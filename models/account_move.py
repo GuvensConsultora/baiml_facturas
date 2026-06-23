@@ -53,9 +53,11 @@ class AccountMove(models.Model):
                     line.discount = move.discount_percent
 
             # Limpiar líneas DESC_BAIML legacy si existen
-            move.invoice_line_ids.filtered(
+            desc_legacy = move.invoice_line_ids.filtered(
                 lambda l: l.product_id.default_code == DESC_CODE
-            ).unlink()
+            )
+            if desc_legacy:
+                move.invoice_line_ids = [(2, e.id, 0) for e in desc_legacy]
 
             # Bonif % → línea negativa sobre el importe bruto
             base = move._base_amount()
@@ -65,7 +67,8 @@ class AccountMove(models.Model):
                 lambda l: l.product_id.default_code == BONIF_CODE
             )
             if move.bonif_percent == 0:
-                existing_bonif.unlink()
+                if existing_bonif:
+                    move.invoice_line_ids = [(2, e.id, 0) for e in existing_bonif]
                 continue
 
             product = move._get_special_product(BONIF_CODE)

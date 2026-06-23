@@ -62,7 +62,7 @@ class SaleOrder(models.Model):
 
             if existing:
                 if order.bonif_percent == 0:
-                    existing.unlink()
+                    order.order_line = [(2, e.id, 0) for e in existing]
                 else:
                     existing[0].name = f'Bonificación {order.bonif_percent:.4g}%'
                     existing[0].price_unit = -bonif_amount
