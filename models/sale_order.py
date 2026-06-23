@@ -7,12 +7,10 @@ class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
     bonif_percent = fields.Float(string='Bonificación %', digits=(5, 2), default=0.0)
-    discount_percent = fields.Float(string='Descuento %', digits=(5, 2), default=0.0)
 
     def _prepare_invoice(self):
         vals = super()._prepare_invoice()
         vals['bonif_percent'] = self.bonif_percent
-        vals['discount_percent'] = self.discount_percent
         return vals
 
     def _create_invoices(self, grouped=False, final=False, date=None):
@@ -47,12 +45,6 @@ class SaleOrder(models.Model):
         self = self.with_context(_syncing_bonif=True)
 
         for order in self:
-            for line in order.order_line:
-                if line.product_id.default_code == BONIF_CODE:
-                    continue
-                if line.discount != order.discount_percent:
-                    line.discount = order.discount_percent
-
             base = order._so_base_amount()
             bonif_amount = round(base * order.bonif_percent / 100, 2)
 
@@ -94,10 +86,8 @@ class SaleOrder(models.Model):
     # transacción → automático, sin botón extra.
     def _recompute_prices(self):
         super()._recompute_prices()
-        self.filtered(
-            lambda o: o.bonif_percent or o.discount_percent
-        )._sync_bonif_desc_so_lines()
+        self.filtered(lambda o: o.bonif_percent)._sync_bonif_desc_so_lines()
 
-    @api.onchange('bonif_percent', 'discount_percent')
-    def _onchange_bonif_discount_so(self):
+    @api.onchange('bonif_percent')
+    def _onchange_bonif_so(self):
         self._sync_bonif_desc_so_lines()

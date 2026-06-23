@@ -8,7 +8,6 @@ class AccountMove(models.Model):
     _inherit = 'account.move'
 
     bonif_percent = fields.Float(string='Bonificación %', digits=(5, 2), default=0.0)
-    discount_percent = fields.Float(string='Descuento %', digits=(5, 2), default=0.0)
     pricelist_id = fields.Many2one(
         'product.pricelist',
         string='Lista de precios',
@@ -42,15 +41,6 @@ class AccountMove(models.Model):
         for move in self:
             if move.move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'):
                 continue
-
-            # Desc % → campo discount en cada línea de producto
-            for line in move.invoice_line_ids:
-                if line.display_type != 'product':
-                    continue
-                if line.product_id.default_code == BONIF_CODE:
-                    continue
-                if line.discount != move.discount_percent:
-                    line.discount = move.discount_percent
 
             # Limpiar líneas DESC_BAIML legacy si existen
             desc_legacy = move.invoice_line_ids.filtered(
@@ -90,8 +80,8 @@ class AccountMove(models.Model):
             else:
                 move.invoice_line_ids = [(0, 0, vals)]
 
-    @api.onchange('bonif_percent', 'discount_percent')
-    def _onchange_bonif_discount(self):
+    @api.onchange('bonif_percent')
+    def _onchange_bonif(self):
         self._sync_bonif_desc_lines()
 
     def action_apply_pricelist(self):

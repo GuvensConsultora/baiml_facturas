@@ -9,7 +9,6 @@
             <xpath expr="//field[@name='order_line']" position="after">
                 <group string="Ajustes de precio">
                     <field name="bonif_percent" string="Bonificación %"/>
-                    <field name="discount_percent" string="Descuento %"/>
                 </group>
             </xpath>
         </field>

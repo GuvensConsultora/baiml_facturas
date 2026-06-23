@@ -13,7 +13,6 @@
                            options="{'no_create': True}"
                            invisible="state != 'draft'"/>
                     <field name="bonif_percent" string="Bonificación %"/>
-                    <field name="discount_percent" string="Descuento %"/>
                 </group>
                 <div class="mb-3"
                      invisible="move_type not in ['out_invoice', 'out_refund'] or state != 'draft' or not pricelist_id">

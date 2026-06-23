@@ -1,10 +1,10 @@
 {
     "name": "BAIML — Facturas (ajustes PDF)",
-    "version": "19.0.1.17.0",
+    "version": "19.0.1.18.0",
     "author": "Yagüven C.G.",
     "website": "https://yaguven.com",
     "category": "Accounting",
-    "summary": "Ajustes PDF facturas: oculta columna Impuestos, fix encabezado II_IM, campos bonif/desc global, lista de precios en factura.",
+    "summary": "Ajustes PDF facturas: oculta columna Impuestos, fix encabezado II_IM, bonificación global, lista de precios en factura.",
     "depends": [
         "account",
         "l10n_ar",
