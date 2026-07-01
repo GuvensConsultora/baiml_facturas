@@ -1,6 +1,6 @@
 {
     "name": "BAIML — Facturas (ajustes PDF)",
-    "version": "19.0.1.21.0",
+    "version": "19.0.1.22.0",
     "author": "Yagüven C.G.",
     "website": "https://yaguven.com",
     "category": "Accounting",
@@ -14,6 +14,7 @@
         "data/product_data.xml",
         "views/account_move_view.xml",
         "report/report_invoice_inherit.xml",
+        "report/report_saleorder_inherit.xml",
     ],
     "installable": True,
     "application": False,

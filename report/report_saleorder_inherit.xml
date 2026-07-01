@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_saleorder_document_baiml"
+              inherit_id="sale.report_saleorder_document"
+              name="BAIML — Cotización 3 columnas">
+
+        <!-- Criterio BAIML: el cuerpo muestra solo Descripción · Cantidad ·
+             Precio unit. · Importe. Los impuestos van al bloque de totales
+             (abajo) y el descuento global aparece como línea del cuerpo, no
+             como columna. Apagar los flags nativos oculta todas las variantes
+             de columna (línea, sección, agrupado) y ajusta los colspan. -->
+        <xpath expr="//t[@t-set='display_discount']" position="attributes">
+            <attribute name="t-value">False</attribute>
+        </xpath>
+
+        <xpath expr="//t[@t-set='display_taxes']" position="attributes">
+            <attribute name="t-value">False</attribute>
+        </xpath>
+
+    </template>
+</odoo>

@@ -12,6 +12,13 @@
             <attribute name="t-value">report_type == 'pdf' and o.journal_id.l10n_ar_afip_pos_system == 'II_IM' and o.state == 'posted' and not o.l10n_ar_afip_auth_code_due</attribute>
         </xpath>
 
+        <!-- Columna Descuento: ocultar apagando el flag nativo display_discount.
+             Oculta el th, las celdas (línea/agrupado) y ajusta los colspan de
+             las secciones de una. El descuento sigue reflejado en el Importe. -->
+        <xpath expr="//t[@t-set='display_discount']" position="attributes">
+            <attribute name="t-value">False</attribute>
+        </xpath>
+
         <!-- Columna impuestos: ocultar header th y celdas de datos -->
         <xpath expr="//th[@name='th_taxes']" position="replace"/>
 
