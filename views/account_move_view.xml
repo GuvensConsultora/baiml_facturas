@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <record id="view_move_bonif_desc" model="ir.ui.view">
-        <field name="name">account.move.bonif.desc.baiml</field>
+    <record id="view_move_pricelist_baiml" model="ir.ui.view">
+        <field name="name">account.move.pricelist.baiml</field>
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='invoice_line_ids']" position="after">
-                <group string="Ajustes de precio"
+                <group string="Lista de precios"
                        invisible="move_type not in ['out_invoice', 'out_refund']">
                     <field name="pricelist_id"
                            options="{'no_create': True}"
                            invisible="state != 'draft'"/>
-                    <field name="bonif_percent" string="Bonificación %"/>
                 </group>
                 <div class="mb-3"
                      invisible="move_type not in ['out_invoice', 'out_refund'] or state != 'draft' or not pricelist_id">
